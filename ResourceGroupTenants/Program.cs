@@ -33,8 +33,7 @@ if (app.Environment.IsDevelopment())
 }
 // Use Dna Framework
 app.UseDnaFramework();
-app.UseHttpsRedirection();
-
+app.UseHttpsRedirection(); 
 app.UseAuthorization();
 
 app.MapControllers();
