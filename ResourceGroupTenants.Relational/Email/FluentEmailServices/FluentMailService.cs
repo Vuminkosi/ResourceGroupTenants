@@ -25,6 +25,12 @@ namespace ResourceGroupTenants.Relational.Emails.FluentServices
             });
 
 
+            if (message.Attachments is null)
+                message.Attachments = new List<FluentEmail.Core.Models.Attachment>();
+
+            if (message.CCs is null)
+                message.CCs = new List<FluentEmail.Core.Models.Address>();
+
             Email.DefaultRenderer = new RazorRenderer();
             var email = await Email
                                 .From(message.FromEmail, message.FromName)

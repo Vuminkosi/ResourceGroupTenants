@@ -1,8 +1,12 @@
-﻿using Microsoft.AspNetCore.Authentication.Cookies;
+﻿using Dna;
+
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Identity;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.Extensions.Configuration;
-using Microsoft.Extensions.DependencyInjection; 
+using Microsoft.Extensions.DependencyInjection;
+using Microsoft.IdentityModel.Tokens;
+
 using ResourceGroupTenants.Relational.Data;
 using ResourceGroupTenants.Relational.Data.Identity;
 using ResourceGroupTenants.Relational.Emails.FluentServices;
@@ -36,9 +40,13 @@ namespace ResourceGroupTenants.Relational.Extensions
             
             // add tenants context
             services.AddDbContext<TenantDBContext>(m => m.UseSqlServer(e => e.MigrationsAssembly(typeof(TenantDBContext).Assembly.FullName)));
-            services.AddIdentityRolesAndPoliciesService();
+            
             // get scoped tenants context
             services.ApplyTenantContextMigrations();
+            // add JWT Authentication Service
+            services.AddJwtServices();
+            // add login policies and roles
+            services.AddIdentityRolesAndPoliciesService();
 
             // add emailing service
             services.AddTransient<IFluentMailService, FluentMailService>();
@@ -108,7 +116,26 @@ namespace ResourceGroupTenants.Relational.Extensions
             return services;
         }
 
+        private static IServiceCollection AddJwtServices(this IServiceCollection services)
+        {
 
+            services.AddAuthentication()
+                          .AddJwtBearer(options =>
+                          {
+                              options.TokenValidationParameters = new TokenValidationParameters
+                              {
+                                  ValidateIssuer = true,
+                                  ValidateAudience = true,
+                                  ValidateLifetime = true,
+                                  ValidateIssuerSigningKey = true,
+                                  ValidIssuer = Framework.Construction.Configuration["Jwt:JwtIssuer"],
+                                  ValidAudience = Framework.Construction.Configuration["Jwt:JwtAudience"],
+                                  IssuerSigningKey = new SymmetricSecurityKey(Encoding.UTF8.GetBytes(Framework.Construction.Configuration["Jwt:SecretKey"])),
+                              };
+                          });
+
+            return services;
+        }
         public static IServiceCollection AddIdentityRolesAndPoliciesService(this IServiceCollection services)
         {
 

@@ -17,25 +17,28 @@ using System.Threading.Tasks;
 namespace ResourceGroupTenants.Relational.Services
 {
 
-    public class TenantService : AtomicRepository<ResourceGroupModel>,ITenantService
-    { 
+    public class TenantService : AtomicRepository<ResourceGroupModel>, ITenantService
+    {
         private readonly HttpContext _httpContext;
         private Tenant _currentTenant;
         private string defaultConnectionString;
-        public TenantService(ResourceGroupDBContext resourceContext, IHttpContextAccessor contextAccessor):base(resourceContext)
+        public TenantService(ResourceGroupDBContext resourceContext, IHttpContextAccessor contextAccessor) : base(resourceContext)
         {
-            defaultConnectionString = Framework.Construction.Configuration.GetConnectionString("DefaultConnection"); 
+            defaultConnectionString = Framework.Construction.Configuration.GetConnectionString("DefaultConnection");
             _httpContext = contextAccessor.HttpContext;
             if (_httpContext != null)
             {
-                if (_httpContext.Request.Headers.TryGetValue("resourceCode", out var resourceCode))
+                if (_httpContext.Request.RouteValues.TryGetValue("resourceCode", out var resourceCode))
                 {
-                    SetTenant(resourceCode);
+                    if (resourceCode is not null)
+                        SetTenant((string)resourceCode);
+                    else
+                        SetDefaultConnectionStringToCurrentTenant();
                 }
                 else
                     SetDefaultConnectionStringToCurrentTenant();
             }
-        } 
+        }
         public void SetTenant(string resourceCode)
         {
             _currentTenant = new Tenant();
@@ -77,9 +80,9 @@ namespace ResourceGroupTenants.Relational.Services
             return await this.HasAnyAsync(model => model.Admin == resource.Admin);
         }
 
-        public async Task<ResourceGroupModel> GetByCodeAsync(string resourceCode,CancellationToken cancellationToken = default)
+        public async Task<ResourceGroupModel> GetByCodeAsync(string resourceCode, CancellationToken cancellationToken = default)
         {
-            return await this.GetFirstOrDefaultAsync(model => model.ResourceCode == resourceCode,cancellationToken);
+            return await this.GetFirstOrDefaultAsync(model => model.ResourceCode == resourceCode, cancellationToken);
         }
     }
 }
